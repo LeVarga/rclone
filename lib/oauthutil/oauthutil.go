@@ -28,6 +28,7 @@ import (
 var (
 	// templateString is the template used in the authorization webserver
 	templateString string
+	AuthState      string
 )
 
 const (
@@ -658,6 +659,7 @@ func getAuthURL(name string, m configmap.Mapper, oauthConfig *oauth2.Config, opt
 
 	// Make random state
 	state, err = random.Password(128)
+	AuthState = state
 	if err != nil {
 		return "", "", err
 	}
@@ -725,6 +727,9 @@ func configSetup(ctx context.Context, id, name string, m configmap.Mapper, oauth
 	auth := <-server.result
 	if !auth.OK || auth.Code == "" {
 		return "", auth
+	}
+	if auth.Code == "cancel" {
+		return "", nil
 	}
 	fs.Logf(nil, "Got code\n")
 	if opt.CheckAuth != nil {
@@ -870,4 +875,5 @@ func (s *authServer) Stop() {
 
 	// close the server
 	_ = s.server.Close()
+	AuthState = ""
 }
